@@ -170,16 +170,20 @@ M.update_current_buffer = function(new_cwd, git_path_info, use_netrw)
     local buffer_path_in_new_cwd =
         Path:new(new_cwd .. "/" .. table.concat(split_path, "/"))
 
-    M.delete_buffers()
-
     if not buffer_path_in_new_cwd:exists() then
         M.open_netrw_if_enabled(use_netrw, new_cwd)
         return
     end
 
-    -- Create and switch to new buffer
+    -- Create new buffer from file path and delete old buffer
     vim.schedule(function()
-        local bufnr = vim.fn.bufnr(buffer_path_in_new_cwd:absolute(), true)
+        vim.fn.bufnr(buffer_path_in_new_cwd:absolute(), true)
+        vim.api.nvim_buf_delete(0, {})
+    end)
+
+    -- Switch to newly created buffer
+    vim.schedule(function()
+        local bufnr = vim.fn.bufnr(buffer_path_in_new_cwd:absolute(), false)
         vim.api.nvim_set_current_buf(bufnr)
     end)
 end
@@ -187,13 +191,6 @@ end
 M.open_netrw_if_enabled = function(enabled, dir)
     if enabled then
         vim.cmd("Ex " .. (dir or ""))
-    end
-end
-
-M.delete_buffers = function()
-    local buffers = vim.api.nvim_list_bufs()
-    for _, buffer_id in ipairs(buffers) do
-        vim.api.nvim_buf_delete(buffer_id, {})
     end
 end
 
